@@ -3,7 +3,7 @@ require(preprocessCore)
 require(caret)
 require(ROSE)
 
-#load the workspace 
+#load the workspace
 #in the image: tcga expression data (may also include other data), cyto-gene, codel.status
 load("cnape.model.RData")
 
@@ -17,7 +17,7 @@ inputCheck <-function(df){
   m = max(inputGenes, na.rm = T)
   n = min(inputGenes, na.rm = T)
   try(if(n<0) stop("ERROR: Negative values detected. Please check your input file."))
-  try(if(m>1000000) stop("ERROR: Come on man, why is your RPKM greater than 1M???"))
+  try(if(m>1000000) stop("ERROR: Come on, why is your RPKM greater than 1M???"))
   if (m < 50  ){
     print ("WARNING: Max value in expression data < 50. We will continue but has it been log2 transformed?")
   }
@@ -39,20 +39,20 @@ dataPreprocess <-function(df, modelData){ #process the input data to get z score
   df = df[order(rownames(df)),]
   modelData = modelData[rownames(modelData) %in% commonGenes,]
   modelData = modelData[order(rownames(modelData)),]
-  
+
   mergeData = cbind(df, modelData)
   rmean = apply(mergeData, 1, mean)
   mergeData = mergeData[rmean >0,]
-  
+
   mergeData.qt = normalize.quantiles(mergeData)
   rownames(mergeData.qt) = rownames(mergeData)
   colnames(mergeData.qt) = colnames(mergeData)
-  
+
   modelData.qt.z = t(scale(t(mergeData[,!startsWith(colnames(mergeData.qt), "tmp")])))
   df.qt.z = t(scale(t(mergeData.qt[,startsWith(colnames(mergeData.qt), "tmp")])))
-  
+
   mergeData.qt.z = cbind(modelData.qt.z, df.qt.z)
-  
+
   return(mergeData.qt.z)
 }
 

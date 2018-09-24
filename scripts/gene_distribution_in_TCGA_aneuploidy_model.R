@@ -1,7 +1,7 @@
 load("~/Documents/codel/CNAPE/model/tcga_aneuploidy_glmnetmodels.RData")
 hg19cyto = read.delim("~/Documents/codel/CNAPE/scripts/hg19.cytoBand.txt", stringsAsFactors = F)
 
-
+if (!require('glmnet')) install.packages('glmnet'); library('glmnet')
 if (!require('reshape2')) install.packages('reshape2'); library('reshape2')
 if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
 if (!require('pheatmap')) install.packages('pheatmap'); library('pheatmap')
@@ -12,7 +12,7 @@ names(pred.acc) = gsub('glmnet_','',names(pred.acc))
 
 df = pred.acc[,1:39]*100
 x = melt(df)
-ggplot(x, aes(variable, value, color = variable)) + ggtitle("Arm-level Models")+
+arm.acc <- ggplot(x, aes(variable, value, color = variable)) + ggtitle("Arm-level Models")+
   geom_boxplot(show.legend = F) + ylim(50,100) +
   theme_classic() +theme(axis.text.x=element_text(angle = -90,hjust = 0,size = 7, colour = "black")) +
   labs(x = "", y = "Precition accuracy (%)")
@@ -20,13 +20,13 @@ ggplot(x, aes(variable, value, color = variable)) + ggtitle("Arm-level Models")+
 df = pred.acc[,c(40:51,25:27,52:56,38:39)]*100
 names(df) <- gsub('q','',names(df))
 x = melt(df)
-ggplot(x, aes(variable, value, color = variable)) +ggtitle("Chromosome-level Models")+
+chrom.acc <- ggplot(x, aes(variable, value, color = variable)) +ggtitle("Chromosome-level Models")+
   geom_boxplot(show.legend = F) + ylim(50,100) +
   theme_classic() +theme(axis.text.x=element_text(angle = -90, hjust = 0,size = 7, colour = "black")) +
   labs(x = "", y = "Precition accuracy (%)")
 #boxplot(df, ylim = c(50,100), ylab = "Prediction Accuracy (%)", cex.axis= 0.7)
 
-library(glmnet)
+
 st = NULL
 for (m in 1:length(glmnetmodels)){
   md = glmnetmodels[[m]]

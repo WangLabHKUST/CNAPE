@@ -1,17 +1,18 @@
-require(argparse)
-require(preprocessCore)
-require(caret)
-require(ROSE)
+if (!require('glmnet')) install.packages('glmnet'); library('glmnet')
+if (!require('reshape2')) install.packages('reshape2'); library('reshape2')
+if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
+if (!require('pheatmap')) install.packages('pheatmap'); library('pheatmap')
 
-#load the workspace
-#in the image: tcga expression data (may also include other data), cyto-gene, codel.status
-load("cnape.model.RData")
+
+load("model/tcga_aneuploidy_glmnetmodels.RData")
+xx <- coef(glmnetmodels$glmnet_chr1p, s = "lambda.min")
+gns = xx$`0`@Dimnames[[1]][-1] #extract the gene list
 
 #check the input matrix
 inputCheck <-function(df){
   inputGenes = rownames(df)
   commonGenes = intersect(inputGenes, cyto$symbol)
-  try(if(length(commonGenes) < 100) stop("ERROR: failed to detect necessary genes. Please check the documentation and the example input file."))
+  try(if(length(commonGenes) < 100) stop("ERROR: failed to detect necessary genes. Please check your input."))
   allNumric = sum(apply(df,2,function(x) !is.numeric(x)))
   try(if(allNumric !=0) stop("ERROR: Non-numeric values for gene expression level detected. Please check your input."))
   m = max(inputGenes, na.rm = T)
@@ -19,7 +20,7 @@ inputCheck <-function(df){
   try(if(n<0) stop("ERROR: Negative values detected. Please check your input file."))
   try(if(m>1000000) stop("ERROR: Come on, why is your RPKM greater than 1M???"))
   if (m < 50  ){
-    print ("WARNING: Max value in expression data < 50. We will continue but has it been log2 transformed?")
+    print ("WARNING: Max value in expression data < 50. We will continue treating the input as log2 transformed.")
   }
   return(0)
 }

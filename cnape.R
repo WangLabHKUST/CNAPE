@@ -73,18 +73,29 @@ dataPreparation(df, target){
   return(list(modelData = knowns, predictData = unknowns, modelLabel = labs))
 }
 
-plsModeling <-function(df){ #df should be made by cbind(modelData,labs)
-  idx = createDataPartition(y= df$labs, p = 0.75, list =F)
-  train = df[idx,]
-  test = df[-idx,]
-  ctrl <- trainControl(method = "repeatedcv",repeats =5,summaryFunction = twoClassSummary, classProbs = TRUE)
-  pls.grid = expand.grid(ncomp = c(1,3,5,10,20))
-  plsFit <- train( labs ~ ., data = df, method = "pls",trControl = ctrl, metric= "ROC",tuneGrid = pls.grid)
-  return(plsFit)
+##start prediction
+
+for (i in 1:length(glmnetmodels)){
+  md = glmnetmodels[[i]]
+  m = predict(md, newx = as.matrix(dtexp))[,,1]
+  m = exp(m)/rowSums(exp(m))
+  lb = as.integer(dimnames(m)[[2]][unlist(apply(m, 1, which.max))])
+  
+  if (i ==1){
+    mout = data.frame(Sample = unlist(lapply(dimnames(m)[[1]], function(x) substr(x,1,15))), cna = lb, stringsAsFactors = F)
+    names(mout)[2] = gsub(pattern = "glmnet_","",names(glmnetmodels)[i])
+  } else{
+    tmp = data.frame(Sample = unlist(lapply(dimnames(m)[[1]], function(x) substr(x,1,15))), cna = lb, stringsAsFactors = F)
+    names(tmp)[2] = gsub(pattern = "glmnet_","",names(glmnetmodels)[i])
+    mout = merge(mout, tmp)
+  }
 }
 
-plsPrediction <-function(plsmod, ndata){
-  plsPred <- predict(plsFit, newdata = test[,-ncol(test)], type = "prob")
-  plsPred[,3] = ifelse(plsPred[,1] > 0.5, "yes", "no")
-  return(plsPred)
-}
+rownames(mout) = mout$Sample
+#mout = mout[,-1]
+
+write.table(mout[1:40], file = "example/example.arm_level.cna.txt", quote =F, row.names = F,sep = "\t" )
+moutc = mout[,c(1,41:52,26:28,53:57,39:40)]
+names(moutc)[2:23] = gsub(pattern = "q",replacement = "",x =names(moutc)[2:23] )
+write.table(mout[1:40], file = "example/example.chromosome_level.cna.txt", quote =F, row.names = F, sep = "\t" )
+

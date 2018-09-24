@@ -1,5 +1,5 @@
 # CNAPE
-Copy Number Alteration Prediction from gene Expression in human cancers
+__C__opy __N__umber __A__lteration __P__rediction from gene __E__xpression in human cancers
 
 
 ## Ownership

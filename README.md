@@ -1,5 +1,5 @@
 # CNAPE
-__C__opy __N__umber __A__lteration __P__rediction from gene __E__xpression in human cancers
+**C**opy **N**umber **A**lteration **P**rediction from gene **E**xpression in human cancers
 
 
 ## Ownership

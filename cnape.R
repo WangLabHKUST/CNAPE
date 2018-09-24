@@ -1,3 +1,5 @@
+#check and install necessary packages
+
 if (!require('glmnet')) install.packages('glmnet'); library('glmnet')
 if (!require('reshape2')) install.packages('reshape2'); library('reshape2')
 if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
@@ -7,6 +9,7 @@ if (!require('pheatmap')) install.packages('pheatmap'); library('pheatmap')
 load("model/tcga_aneuploidy_glmnetmodels.RData")
 xx <- coef(glmnetmodels$glmnet_chr1p, s = "lambda.min")
 gns = xx$`0`@Dimnames[[1]][-1] #extract the gene list
+
 
 #check the input matrix
 inputCheck <-function(df){

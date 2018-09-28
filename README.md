@@ -20,15 +20,21 @@ Please clone this repository by
 ```
 git clone https://github.com/Kevin-Moo/CNAPE
 ```
-To test your environment, go to the CNAPE folder, and run the test:
+To test the environment, go to the CNAPE folder and run :
 ```
-user@linux$ ./run_example.sh
+./run_example.sh
 ```
-You can modify the script to run on your own data.
 
-Meanwhile, please make sure that your RNA-seq data is processed using [TCGA's RNA-seq processing pipeline](https://webshare.bioinf.unc.edu/public/mRNAseq_TCGA/UNC_mRNAseq_summary.pdf) (i.e., reads were
+The main function of CNAPE is packaged in *cnape.R*. Get your gene expression profile prepared, and run it like this:
+
+```
+Rscript cnape.R expressionMatrix outputPrefix
+```
+CNAPE.R takes two arguments: the first one is your expression matrix, and the second one is the prefix of the output.
+The format of the input gene expression matrix is exanplified in the example. Meanwhile, please make sure that your RNA-seq data is processed using [TCGA's RNA-seq processing pipeline](https://webshare.bioinf.unc.edu/public/mRNAseq_TCGA/UNC_mRNAseq_summary.pdf) (i.e., reads were
 aligned to the human genome using [MapSplice](https://academic.oup.com/nar/article/38/18/e178/1068935) and expression was quantified/normalized using [RSEM](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-12-323) against UCSC genes).
 
+The output contains *prefix*.chromosome_level.cna.txt and *prefix*.arm_level.cna.txt
 
 ## Dependencies
 

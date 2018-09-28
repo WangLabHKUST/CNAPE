@@ -13,10 +13,10 @@ chrout = paste0(prefix,".chromosome_level.cna.txt")
 print("Running CNAPE....")
 
 #check and install necessary packages
-if (!require('glmnet')) install.packages('glmnet', repos = "https://cloud.r-project.org"); suppressPackageStartupMessages(library('glmnet'))
-if (!require('reshape2')) install.packages('reshape2', repos = "https://cloud.r-project.org"); suppressPackageStartupMessages(library('reshape2'))
-if (!require('ggplot2')) install.packages('ggplot2', repos = "https://cloud.r-project.org"); suppressPackageStartupMessages(library('ggplot2'))
-if (!require('pheatmap')) install.packages('pheatmap', repos = "https://cloud.r-project.org"); suppressPackageStartupMessages(library('pheatmap'))
+if (!require('glmnet')) install.packages('glmnet', repos = "https://mirrors.tuna.tsinghua.edu.cn"); suppressPackageStartupMessages(library('glmnet'))
+#if (!require('reshape2')) install.packages('reshape2', repos = "https://mirrors.tuna.tsinghua.edu.cn"); suppressPackageStartupMessages(library('reshape2'))
+#if (!require('ggplot2')) install.packages('ggplot2', repos = "https://mirrors.tuna.tsinghua.edu.cn"); suppressPackageStartupMessages(library('ggplot2'))
+#if (!require('pheatmap')) install.packages('pheatmap', repos = "https://mirrors.tuna.tsinghua.edu.cn"); suppressPackageStartupMessages(library('pheatmap'))
 
 
 
@@ -115,7 +115,7 @@ if(inputCheck(ipt)==0){
     m = predict(md, newx = as.matrix(dtexp))[,,1]
     m = exp(m)/rowSums(exp(m))
     lb = as.integer(dimnames(m)[[2]][unlist(apply(m, 1, which.max))])
-    
+
     if (i ==1){
       mout = data.frame(Sample = unlist(lapply(dimnames(m)[[1]], function(x) substr(x,1,15))), cna = lb, stringsAsFactors = F)
       names(mout)[2] = gsub(pattern = "glmnet_","",names(glmnetmodels)[i])
@@ -125,10 +125,10 @@ if(inputCheck(ipt)==0){
       mout = merge(mout, tmp)
     }
   }
-  
+
   rownames(mout) = mout$Sample
   #mout = mout[,-1]
-  
+
   print(paste0("Arm-level prediction results: ",armout))
   write.table(mout[1:40], file = armout, quote =F, row.names = F,sep = "\t" )
   moutc = mout[,c(1,41:52,26:28,53:57,39:40)]

@@ -13,10 +13,10 @@ chrout = paste0(prefix,".chromosome_level.cna.txt")
 print("Running CNAPE....")
 
 #check and install necessary packages
-if (!require('glmnet')) install.packages('glmnet', repos = "https://mirrors.tuna.tsinghua.edu.cn"); suppressPackageStartupMessages(library('glmnet'))
-#if (!require('reshape2')) install.packages('reshape2', repos = "https://mirrors.tuna.tsinghua.edu.cn"); suppressPackageStartupMessages(library('reshape2'))
-#if (!require('ggplot2')) install.packages('ggplot2', repos = "https://mirrors.tuna.tsinghua.edu.cn"); suppressPackageStartupMessages(library('ggplot2'))
-#if (!require('pheatmap')) install.packages('pheatmap', repos = "https://mirrors.tuna.tsinghua.edu.cn"); suppressPackageStartupMessages(library('pheatmap'))
+if (!require('glmnet')) install.packages('glmnet', repos = "https://mirrors.tuna.tsinghua.edu.cn/CRAN"); suppressPackageStartupMessages(library('glmnet'))
+#if (!require('reshape2')) install.packages('reshape2', repos = "https://mirrors.tuna.tsinghua.edu.cn/CRAN"); suppressPackageStartupMessages(library('reshape2'))
+#if (!require('ggplot2')) install.packages('ggplot2', repos = "https://mirrors.tuna.tsinghua.edu.cn/CRAN"); suppressPackageStartupMessages(library('ggplot2'))
+#if (!require('pheatmap')) install.packages('pheatmap', repos = "https://mirrors.tuna.tsinghua.edu.cn/CRAN"); suppressPackageStartupMessages(library('pheatmap'))
 
 
 
@@ -135,5 +135,5 @@ if(inputCheck(ipt)==0){
   names(moutc)[2:23] = gsub(pattern = "q",replacement = "",x =names(moutc)[2:23] )
   print(paste0("Chromosome-level prediction results: ",chrout))
   write.table(moutc, file = chrout, quote =F, row.names = F, sep = "\t" )
-  print("Done!" )
+  print("Successfully completed! Please check your output." )
 }

@@ -12,7 +12,7 @@ Active development
 
 ## Introduction
 
-Copy number alterations (CNAs) are important features of cancer. While the standard methods for CNA detection (CGH arrays, SNP arrrays, DNA sequencing) rely on DNA, occasionally DNA data are not available, especially in cancer studies (e.g. biopsies). CNAPE comes into play by predicting CNAs based on gene expression data from RNA-seq.
+Copy number alterations (CNAs) are important features of cancer. While the standard methods for CNA detection (CGH arrays, SNP arrrays, DNA sequencing) rely on DNA, occasionally DNA data are not available, especially in cancer studies (e.g. biopsies, legacy data). CNAPE comes into play by predicting CNAs based on gene expression data from RNA-seq.
 
 
 ## How to run
@@ -30,7 +30,7 @@ aligned to the human genome using [MapSplice](https://academic.oup.com/nar/artic
 
 ## Dependencies
 
-The models are trained on the [TCGA Pancancer Atlas data](https://gdc.cancer.gov/about-data/publications/pancanatlas), using [glmnet](https://web.stanford.edu/~hastie/glmnet/glmnet_alpha.html) package in R.
+The models are trained on the [TCGA Pancancer Atlas data](https://gdc.cancer.gov/about-data/publications/pancanatlas), using [*glmnet*](https://web.stanford.edu/~hastie/glmnet/glmnet_alpha.html) package in R. Other dependencies include *reshape2*, *ggplot2* and *pheatmap*, all for visualization. The dependency requirements are automatically solved while running the program.
 
 ## Contact
 For technical issues please contact Kevin via email: qmu@connect.ust.hk

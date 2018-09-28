@@ -1,11 +1,27 @@
+#this script takes two arguments
+#the first one is your input file
+#containing youe expression matrix
+#the second is the prefix of the output
+
+args = commandArgs()
+infile = args[6]
+prefix = args[7]
+
+armout = paste0(prefix,".arm_level.cna.txt")
+chrout = paste0(prefix,".chromosome_level.cna.txt")
+
+print("Running CNAPE....")
+
 #check and install necessary packages
+if (!require('glmnet')) install.packages('glmnet'); suppressPackageStartupMessages(library('glmnet'))
+if (!require('reshape2')) install.packages('reshape2'); suppressPackageStartupMessages(library('reshape2'))
+if (!require('ggplot2')) install.packages('ggplot2'); suppressPackageStartupMessages(library('ggplot2'))
+if (!require('pheatmap')) install.packages('pheatmap'); suppressPackageStartupMessages(library('pheatmap'))
 
-if (!require('glmnet')) install.packages('glmnet'); library('glmnet')
-if (!require('reshape2')) install.packages('reshape2'); library('reshape2')
-if (!require('ggplot2')) install.packages('ggplot2'); library('ggplot2')
-if (!require('pheatmap')) install.packages('pheatmap'); library('pheatmap')
 
 
+
+print("Loading models...")
 load("model/tcga_aneuploidy_glmnetmodels.RData")
 xx <- coef(glmnetmodels$glmnet_chr1p, s = "lambda.min")
 gns = xx$`0`@Dimnames[[1]][-1] #extract the gene list
@@ -14,18 +30,19 @@ gns = xx$`0`@Dimnames[[1]][-1] #extract the gene list
 #check the input matrix
 inputCheck <-function(df){
   inputGenes = rownames(df)
-  commonGenes = intersect(inputGenes, cyto$symbol)
-  try(if(length(commonGenes) < 100) stop("ERROR: failed to detect necessary genes. Please check your input."))
+  missedGene = setdiff(gns, inputGenes)
   allNumric = sum(apply(df,2,function(x) !is.numeric(x)))
-  try(if(allNumric !=0) stop("ERROR: Non-numeric values for gene expression level detected. Please check your input."))
-  m = max(inputGenes, na.rm = T)
-  n = min(inputGenes, na.rm = T)
-  try(if(n<0) stop("ERROR: Negative values detected. Please check your input file."))
-  try(if(m>1000000) stop("ERROR: Come on, why is your RPKM greater than 1M???"))
-  if (m < 50  ){
-    print ("WARNING: Max value in expression data < 50. We will continue treating the input as log2 transformed.")
-  }
+  m = max(df, na.rm = T)
+  n = min(df, na.rm = T)
+  if(length(missedGene) >0 ){
+    stop("ERROR: failed to detect necessary genes. Please check the input. Refer to the example.")
+  } else if (allNumric !=0){
+    stop("ERROR: Non-numeric values for gene expression level detected. Please check the input. Refer to the example.")
+  } else if (m>1000000){
+    stop("ERROR: RPKM greater than 1M???")
+  } else{
   return(0)
+  }
 }
 
 #data preprocessing
@@ -60,7 +77,7 @@ dataPreprocess <-function(df, modelData){ #process the input data to get z score
   return(mergeData.qt.z)
 }
 
-dataPreparation(df, target){
+dataPreparation<- function(df, target){
   idx = cyto[,target]
   genes = cyto$symbol[idx]
   df = df[rownames(df) %in% genes,]
@@ -73,29 +90,50 @@ dataPreparation(df, target){
   return(list(modelData = knowns, predictData = unknowns, modelLabel = labs))
 }
 
-##start prediction
-
-for (i in 1:length(glmnetmodels)){
-  md = glmnetmodels[[i]]
-  m = predict(md, newx = as.matrix(dtexp))[,,1]
-  m = exp(m)/rowSums(exp(m))
-  lb = as.integer(dimnames(m)[[2]][unlist(apply(m, 1, which.max))])
-  
-  if (i ==1){
-    mout = data.frame(Sample = unlist(lapply(dimnames(m)[[1]], function(x) substr(x,1,15))), cna = lb, stringsAsFactors = F)
-    names(mout)[2] = gsub(pattern = "glmnet_","",names(glmnetmodels)[i])
-  } else{
-    tmp = data.frame(Sample = unlist(lapply(dimnames(m)[[1]], function(x) substr(x,1,15))), cna = lb, stringsAsFactors = F)
-    names(tmp)[2] = gsub(pattern = "glmnet_","",names(glmnetmodels)[i])
-    mout = merge(mout, tmp)
-  }
+dataPreprocessSimple <-function(dfi, fgenes){
+  df = dfi
+  df = df[fgenes,]
+  df[is.na(df)] <-0
+  df = log2(df + 1)
+  df = t(scale(df))
+  return (df)
 }
+##start prediction
+print("Reading input...")
+#infile = "example/example.geneExpression.normalized.txt"
+ipt = read.delim(infile)
 
-rownames(mout) = mout$Sample
-#mout = mout[,-1]
 
-write.table(mout[1:40], file = "example/example.arm_level.cna.txt", quote =F, row.names = F,sep = "\t" )
-moutc = mout[,c(1,41:52,26:28,53:57,39:40)]
-names(moutc)[2:23] = gsub(pattern = "q",replacement = "",x =names(moutc)[2:23] )
-write.table(mout[1:40], file = "example/example.chromosome_level.cna.txt", quote =F, row.names = F, sep = "\t" )
-
+if(inputCheck(ipt)==0){
+  dmn = dim(ipt)
+  print(paste0("In the input are ",dmn[2]," samples, ",dmn[1]," genes"))
+  print("Preprocessing...")
+  dtexp = dataPreprocessSimple(ipt,gns)
+  print("Applying prediction models...")
+  for (i in 1:length(glmnetmodels)){
+    md = glmnetmodels[[i]]
+    m = predict(md, newx = as.matrix(dtexp))[,,1]
+    m = exp(m)/rowSums(exp(m))
+    lb = as.integer(dimnames(m)[[2]][unlist(apply(m, 1, which.max))])
+    
+    if (i ==1){
+      mout = data.frame(Sample = unlist(lapply(dimnames(m)[[1]], function(x) substr(x,1,15))), cna = lb, stringsAsFactors = F)
+      names(mout)[2] = gsub(pattern = "glmnet_","",names(glmnetmodels)[i])
+    } else{
+      tmp = data.frame(Sample = unlist(lapply(dimnames(m)[[1]], function(x) substr(x,1,15))), cna = lb, stringsAsFactors = F)
+      names(tmp)[2] = gsub(pattern = "glmnet_","",names(glmnetmodels)[i])
+      mout = merge(mout, tmp)
+    }
+  }
+  
+  rownames(mout) = mout$Sample
+  #mout = mout[,-1]
+  
+  print(paste0("Arm-level prediction results: ",armout))
+  write.table(mout[1:40], file = armout, quote =F, row.names = F,sep = "\t" )
+  moutc = mout[,c(1,41:52,26:28,53:57,39:40)]
+  names(moutc)[2:23] = gsub(pattern = "q",replacement = "",x =names(moutc)[2:23] )
+  print(paste0("Chromosome-level prediction results: ",chrout))
+  write.table(moutc, file = chrout, quote =F, row.names = F, sep = "\t" )
+  print("Done!" )
+}

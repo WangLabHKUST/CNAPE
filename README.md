@@ -31,10 +31,10 @@ The main function of CNAPE is packaged in *cnape.R*. Get your gene expression pr
 Rscript cnape.R expressionMatrix outputPrefix
 ```
 CNAPE.R takes two arguments: the first one is your expression matrix, and the second one is the prefix of the output.
-The format of the input gene expression matrix is exanplified in the example. Meanwhile, please make sure that your RNA-seq data is processed using [TCGA's RNA-seq processing pipeline](https://webshare.bioinf.unc.edu/public/mRNAseq_TCGA/UNC_mRNAseq_summary.pdf) (i.e., reads were
+The format of the input gene expression matrix is exemplified in the example. Meanwhile, please make sure that your RNA-seq data is processed using [TCGA's RNA-seq processing pipeline](https://webshare.bioinf.unc.edu/public/mRNAseq_TCGA/UNC_mRNAseq_summary.pdf) (i.e., reads were
 aligned to the human genome using [MapSplice](https://academic.oup.com/nar/article/38/18/e178/1068935) and expression was quantified/normalized using [RSEM](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-12-323) against UCSC genes).
 
-The output contains *prefix*.chromosome_level.cna.txt and *prefix*.arm_level.cna.txt
+The output contains *prefix*.chromosome_level.cna.txt and *prefix*.arm_level.cna.txt, where 1 means amplified, -1 means deleted, while 0 means no CNA change.
 
 ## Dependencies
 

@@ -16,9 +16,11 @@ Copy number alterations (CNAs) are important features of cancer. While the stand
 
 
 ## How to run
-
-An example run is shown in a shell script:
-
+Please clone this repository by
+```
+git clone https://github.com/Kevin-Moo/CNAPE
+```
+To test your environment, go to the CNAPE folder, and run the test:
 ```
 user@linux$ ./run_example.sh
 ```

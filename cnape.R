@@ -13,10 +13,10 @@ chrout = paste0(prefix,".chromosome_level.cna.txt")
 print("Running CNAPE....")
 
 #check and install necessary packages
-if (!require('glmnet')) install.packages('glmnet'); suppressPackageStartupMessages(library('glmnet'))
-if (!require('reshape2')) install.packages('reshape2'); suppressPackageStartupMessages(library('reshape2'))
-if (!require('ggplot2')) install.packages('ggplot2'); suppressPackageStartupMessages(library('ggplot2'))
-if (!require('pheatmap')) install.packages('pheatmap'); suppressPackageStartupMessages(library('pheatmap'))
+if (!require('glmnet')) install.packages('glmnet', repos = "https://cloud.r-project.org"); suppressPackageStartupMessages(library('glmnet'))
+if (!require('reshape2')) install.packages('reshape2', repos = "https://cloud.r-project.org"); suppressPackageStartupMessages(library('reshape2'))
+if (!require('ggplot2')) install.packages('ggplot2', repos = "https://cloud.r-project.org"); suppressPackageStartupMessages(library('ggplot2'))
+if (!require('pheatmap')) install.packages('pheatmap', repos = "https://cloud.r-project.org"); suppressPackageStartupMessages(library('pheatmap'))
 
 
 

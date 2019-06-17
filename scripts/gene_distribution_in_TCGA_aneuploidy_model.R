@@ -1,4 +1,5 @@
 load("~/Documents/codel/CNAPE/model/tcga_aneuploidy_glmnetmodels.RData")
+#load("~/Documents/codel/tcga_aneuploidy_glmnetmodels.lasso.RData")
 hg19cyto = read.delim("~/Documents/codel/CNAPE/scripts/hg19.cytoBand.txt", stringsAsFactors = F)
 
 if (!require('glmnet')) install.packages('glmnet'); library('glmnet')
@@ -56,6 +57,7 @@ for (m in 1:length(glmnetmodels)){
   dfm1 = cytoInfo(dfm1)
   df = rbind(df0,df1,dfm1)
   df = df[!duplicated(df$entrez),]
+  df = df[!is.na(df$arm),]
   armstat = as.data.frame(table(df$arm))
   names(armstat) = c("arm",gsub(pattern = "glmnet_","",names(glmnetmodels)[m]))
   if (m==1){
@@ -68,7 +70,7 @@ for (m in 1:length(glmnetmodels)){
 
 rownames(st )= st$arm
 st = st[,-1]
-
+st[is.na(st)]=0
 rsums = apply(st,1,sum)
 # for (i in 1:nrow(st)){
 #   st[i,] = st[i,]/rsums[i]
@@ -76,6 +78,7 @@ rsums = apply(st,1,sum)
 st2plot = st[,1:39] #arms
 rownames(st2plot) = paste0("chr",rownames(st2plot))
 st2plot = st2plot[names(st2plot),]
+st2plot[is.na(st2plot)] =0 
 for (i in 1:ncol(st2plot)){
   st2plot[,i] = st2plot[,i]/sum(st2plot[,i])
 }

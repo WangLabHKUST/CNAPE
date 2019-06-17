@@ -51,4 +51,4 @@ A result file named example.cnas.txt should appear in the example folder. You ca
 The models are trained on the [TCGA Pancancer Atlas data](https://gdc.cancer.gov/about-data/publications/pancanatlas), using [*glmnet*](https://web.stanford.edu/~hastie/glmnet/glmnet_alpha.html) package in R. Other dependencies include *reshape2*, *ggplot2* and *pheatmap*, all for visualization. The dependency requirements are automatically solved while running the program.
 
 ## Contact
-For technical issues please email professor Jiguang Wang: jgwang@ust.hk.
+For technical issues please send an email to qmu@connect.ust.hk or jgwang@ust.hk.

@@ -14,12 +14,11 @@ Active development
 
 Copy number alterations (CNAs) are important features of human cancer. While the standard methods for CNA detection (CGH arrays, SNP arrrays, DNA sequencing) rely on DNA, occasionally DNA data are not available, especially in cancer studies (e.g. biopsies, legacy data). CNAPE comes into play by predicting CNAs based on gene expression data from RNA-seq.
 
-
 ## How to run
 ### 1. Installation
 Before installing CNAPE please make sure you have installed [R](https://cran.r-project.org/), and ```Rscript``` is available in your system path ($PATH).
 
-Necessary R packages for running CNAPE: *glmnet*,*PRROC*.
+Necessary R packages for running CNAPE: *glmnet*,*PRROC*,*caret*,.
 
 A simple clone of the repository is enough for installation, since the necessary packages will be installed automatically when you run CNAPE.
 ```

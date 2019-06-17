@@ -19,11 +19,11 @@ Copy number alterations (CNAs) are important features of human cancer. While the
 ### 1. Installation
 Before installing CNAPE please make sure you have installed [R](https://cran.r-project.org/), and ```Rscript``` is available in your system path ($PATH).
 
-Necesary R packages for running CNAPE: *glmnet*,*PRROC*.
+Necessary R packages for running CNAPE: *glmnet*,*PRROC*.
 
 A simple clone of the repository is enough for installation, since the necessary packages will be installed automatically when you run CNAPE.
 ```
-git clone https://github.com/Kevin-Moo/CNAPE
+git clone https://github.com/WangLabHKUST/CNAPE
 ```
 ### 2. Preparing the input files
 CNAPE.R takes the gene expression matrix of the human cancer samples as input. For RNA-seq data, you can process them using [TCGA's RNA-seq processing pipeline](https://webshare.bioinf.unc.edu/public/mRNAseq_TCGA/UNC_mRNAseq_summary.pdf) (i.e., reads were

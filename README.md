@@ -12,29 +12,39 @@ Active development
 
 ## Introduction
 
-Copy number alterations (CNAs) are important features of cancer. While the standard methods for CNA detection (CGH arrays, SNP arrrays, DNA sequencing) rely on DNA, occasionally DNA data are not available, especially in cancer studies (e.g. biopsies, legacy data). CNAPE comes into play by predicting CNAs based on gene expression data from RNA-seq.
+Copy number alterations (CNAs) are important features of human cancer. While the standard methods for CNA detection (CGH arrays, SNP arrrays, DNA sequencing) rely on DNA, occasionally DNA data are not available, especially in cancer studies (e.g. biopsies, legacy data). CNAPE comes into play by predicting CNAs based on gene expression data from RNA-seq.
 
 
 ## How to run
-Please clone this repository by
+### 1. Installation
+Before installing CNAPE please make sure you have installed [R](https://cran.r-project.org/), and ```Rscript``` is available in your system path ($PATH).
+
+Necesary R packages for running CNAPE: *glmnet*,*PRROC*.
+
+A simple clone of the repository is enough for installation, since the necessary packages will be installed automatically when you run CNAPE.
 ```
 git clone https://github.com/Kevin-Moo/CNAPE
 ```
-To test the environment, go to the CNAPE folder and run :
-```
-./run_example.sh
-```
+### 2. Preparing the input files
+CNAPE.R takes the gene expression matrix of the human cancer samples as input. For RNA-seq data, you can process them using [TCGA's RNA-seq processing pipeline](https://webshare.bioinf.unc.edu/public/mRNAseq_TCGA/UNC_mRNAseq_summary.pdf) (i.e., reads were
+aligned to the human genome using [MapSplice](https://academic.oup.com/nar/article/38/18/e178/1068935) and expression was quantified/normalized using [RSEM](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-12-323) against UCSC genes).
 
+An example input file demonstrating the format of the input gene expression matrix can be found in the *example/* folder.
+### 3. Running CNAPE
 The main function of CNAPE is packaged in *cnape.R*. Get your gene expression profile prepared, and run it like this:
 
 ```
 Rscript cnape.R expressionMatrix outputPrefix
 ```
-CNAPE.R takes two arguments: the first one is your expression matrix, and the second one is the prefix of the output.
-The format of the input gene expression matrix is exemplified in the example. Meanwhile, please make sure that your RNA-seq data is processed using [TCGA's RNA-seq processing pipeline](https://webshare.bioinf.unc.edu/public/mRNAseq_TCGA/UNC_mRNAseq_summary.pdf) (i.e., reads were
-aligned to the human genome using [MapSplice](https://academic.oup.com/nar/article/38/18/e178/1068935) and expression was quantified/normalized using [RSEM](https://bmcbioinformatics.biomedcentral.com/articles/10.1186/1471-2105-12-323) against UCSC genes).
+
 
 The output contains *prefix*.chromosome_level.cna.txt and *prefix*.arm_level.cna.txt, where 1 means amplified, -1 means deleted, while 0 means no CNA change.
+### 4. Examples
+We provide two examples, one for large-scale CNA prediction, and the other for gene-level CNA prediction. After you have cloned CNAPE, please go to the CNAPE folder and run :
+```
+./run_example.sh
+```
+A result file named example.cnas.txt should appear in the example folder. You can compare the results with the provided example.cnas.origional.txt.
 
 ## Dependencies
 

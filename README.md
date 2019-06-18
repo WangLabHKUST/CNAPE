@@ -38,7 +38,7 @@ Rscript cnape.R expressionMatrix outputPrefix
 The output contains *prefix*.chromosome_level.cna.txt and *prefix*.arm_level.cna.txt, where 1 means amplified, -1 means deleted, while 0 means no CNA change.
 ### 4. Examples
 #### Large-scale CNAs
-Fr chromosome and arm level CNAs, the models trained on TCGA pan-cancer data are available. After you have cloned CNAPE, please go to the CNAPE folder and run :
+For chromosome and arm level CNAs, the models trained on TCGA pan-cancer data are available. After you have cloned CNAPE, please go to the CNAPE folder and run :
 ```
 ./run_example.sh
 ```

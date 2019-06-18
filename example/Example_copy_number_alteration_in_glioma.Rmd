@@ -1,0 +1,204 @@
+---
+title: "Copy Number Alteration Prediction using gene Expression"
+output: html_document
+---
+```{r pchages, include=FALSE}
+knitr::opts_chunk$set(comment = NA)
+library(dplyr)
+library(preprocessCore)
+library(caret)
+library(glmnet)
+library(pROC)
+library(PRROC)
+library(VennDiagram)
+```
+### Introduction
+
+Copy number alterations (CNAs) are important features of human cancer. While the standard methods for CNA detection (CGH arrays, SNP arrrays, DNA sequencing) rely on DNA, occasionally DNA data are not available, especially in cancer studies (e.g. biopsies, legacy data). CNAPE comes into play by predicting CNAs based on gene expression data from RNA-seq. In this example we use the TCGA pan-glioma dataset as a proof-of-concept study.
+
+### Prerequisites
+Before installing CNAPE please make sure you have installed [R](https://cran.r-project.org/), and ```Rscript``` is available in your system path ($PATH).
+
+Necessary R packages for running CNAPE: *dplyr*,*preprocessCore*,*glmnet*,*caret*,*PRROC*,*pROC*.
+
+### TCGA pan-glioma dataset
+Glioma is a lethal type of brain tumor with poor survival. In gliomas, copy number alterations (CNAs) such as chromosome 7 gain, chromosome 10 loss, chromosomes 1p/19q co-deletion, EGFR amplification, CDKN2A deletion are known to be prevalent and contribute to the initialization and development of glioma. Here we use the pan-glioma cohort from The Cancer Genome Atlas (TCGA) to examplify how CNAPE could be used to predict CNAs.
+The gene expression profile of can be downloaded from Broad GDAC Firehose (<https://gdac.broadinstitute.org/>). A copy has been provided in the example folder of CNAPE.
+```{r tcgaexp, echo=T,cache=TRUE}
+tcgaexp = read.delim("GBMLGG.rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.data.txt.gz", 
+                     stringsAsFactors = F, row.names = 1, comment.char = "#")
+idx = substr(names(tcgaexp),14,15) == "01" #only use the primary tumor samples
+tcgaexp = tcgaexp[,idx]
+names(tcgaexp) = substr(names(tcgaexp),start = 1,stop = 12)
+dim(tcgaexp)
+```
+
+The copy number alterations for these samples have been analyzed and published in [**Cell** in 2016](https://www.cell.com/cell/fulltext/S0092-8674(15)01692-X), and the processed data can be accessed via [cBioportal](https://www.cbioportal.org/study/summary?id=lgggbm_tcga_pub). A copy has also been provided in CNAPE, under example folder. Here is a preview of the data:
+```{r tcgaau, echo=TRUE, cache=TRUE}
+tcgaau = read.delim("GBMLGG_CNV_20190618.txt.gz", stringsAsFactors = F, comment.char = "#", row.names = 1)
+rownames(tcgaau) = gsub(rownames(tcgaau),pattern = "-",replacement = ".") # "-" ==> "." 
+knitr::kable(head(tcgaau))
+dim(tcgaau)
+```
+
+In this table, the copy number has five status: -2 means deep deletion, -1 means shallow deletion, 0 means no CNA, 1 means one-copy gain, 2 means amplification.
+
+We can only use the sample that have both gene expression data and copy number data to model CNA.
+```{r intersection, cache=TRUE}
+sharedSamples = intersect(names(tcgaexp), rownames(tcgaau))
+tcgaexp = tcgaexp[,sharedSamples]
+tcgaau = tcgaau[sharedSamples,]
+stopifnot(identical(names(tcgaexp), rownames(tcgaau)))
+```
+
+### Prior-knowledge aided multinomial logistic regression model
+
+CNAPE uses a multinomial logistic regression model to predict the CNAs from gene expression data. To select the most meaningful genes as features in the prediction models, a framework integrating prior biological knowledge (i.e. which genes are close to each other, which genes are functionally related) and least absolute shrinkage and selection operator (LASSO) was applied. Details of this method could be found in the CNAPE paper.
+
+Here we use the coordinates of human genes, which are compiled from Gencode annotation version 19, to locate genes within or close to a given region. We also included the information about functionally related genes, which we extracted from STRING database.
+
+
+```{r genes, cache=TRUE}
+#gene information
+hg19 = read.delim("../data/hg19.v19.mymap.txt.gz", stringsAsFactors = F)
+hg19 = hg19[,c(3,5,6,7)]
+hg19 = hg19[!duplicated(hg19$genename),]
+
+tcgagn = data.frame(genename = strsplit(rownames(tcgaexp), "\\|" ) %>% lapply( "[[", 1 ) %>% unlist(), 
+                    geneid = strsplit(rownames(tcgaexp), "\\|" ) %>% lapply( "[[", 2 ) %>% unlist(),
+                    stringsAsFactors = F)
+
+idx = duplicated(tcgagn$genename)
+tcgagn = tcgagn[!idx,]
+tcgaexp = tcgaexp[!idx,]
+
+sharedGenes = intersect(tcgagn$genename, hg19$genename)
+
+idx = tcgagn$genename %in% sharedGenes
+
+tcgaexp = tcgaexp[idx,]
+tcgagn = tcgagn[idx,]
+rownames(tcgaexp) = tcgagn$genename
+#log transformation, quantile normalization and scaling
+tcgaexp_fp = t(tcgaexp)
+tcgaexp_fp[is.na(tcgaexp_fp)] = 0
+
+tcgaexp_fp = log2(tcgaexp_fp + 1)
+
+tcgaexp_fp = normalize.quantiles(as.matrix(tcgaexp_fp))
+rownames(tcgaexp_fp) = names(tcgaexp)
+colnames(tcgaexp_fp) = rownames(tcgaexp)
+
+tcgaexp_fp = as.data.frame(t(scale(t(tcgaexp_fp))))
+```
+
+### Model training and testing: large-scale CNAs
+
+Now the data is ready, so we can start training and testing models. The first example is the broad CNA, 1p/19q codeletion. Note that for the large-scale CNAs, we have little biological knowledge about exactly which genes are functionally related to the alteration, so we set the weight of biological knowledge to zero. In other words, we consider all the genes as candidate features.
+
+```{r codel model, echo=TRUE, cache=TRUE}
+dtx = tcgaexp_fp
+dty = ifelse(tcgaau$codel== -1,1,0)
+set.seed(65536)
+#randomly select 75% samples for model training
+#the remaining 25% will be left out for indepenent testing
+idx = createDataPartition(dty,p = 0.75,list = F)[,1] 
+xtrn = as.matrix(dtx[idx,])
+ytrn = dty[idx]
+
+xtst = as.matrix(dtx[-idx,])
+ytst = dty[-idx]
+
+md = cv.glmnet(x= xtrn ,y=ytrn,family="binomial",nfolds=3,alpha = 0.1)
+```
+
+Now we have the model, we can check the model performance on the testing data:
+``` {r training, fig.height = 3.5, fig.width = 8, fig.align = "center"}
+par(mfrow = c(1,2))
+auroc = roc(as.factor(ytrn),predict(md,newx = xtrn)[,1])
+plot(auroc,main = "1p/19q codel: training")
+text(0.2,0.1,labels = paste0("AUC=",round(auroc$auc[1],4)))
+auroc = roc(as.factor(ytst),predict(md,newx = xtst)[,1])
+plot(auroc, main = "1p/19q codel: testing")
+text(0.2,0.1,labels = paste0("AUC=",round(auroc$auc[1],4)))
+confusionMatrix(as.factor(predict(md,newx = xtst, type = "class")[,1]),as.factor( ytst),positive = '1')
+```
+
+We can see the model gives very nice prediction results. Then we move to gene-level predictions.
+
+### Model training and testing: gene-level CNAs
+Next we explore gene-level CNAs. For this type of task, two types of candidate feature genes were considered: genes at nearby loci of the target gene, and genes functionally related to the target gene as defined in the STRING database.
+
+As an example, we predict *CDKN2A* deep deletion in these samples. We use Area Under Precision Recall Curve (AUPRC) to measure the performance of the models.
+```{r CDKN2A, fig.height = 4, fig.width = 8, fig.align = "center"}
+par(mfrow = c(1,2))
+getNNeighbor <-function(gene, n, inc = TRUE, g = genes){ #a function defined to get the nearest N genes of a given gene
+  genes = g
+  myGene = gene
+  myChr = genes$chr[genes$genename == myGene]
+  myneighb = genes[genes$chr == myChr,]
+  if (n > (nrow(myneighb) - 1)) {n = nrow(myneighb) - 1}
+  refCord = (myneighb$start[myneighb$genename == myGene] + myneighb$end[myneighb$genename == myGene])/2
+  myneighb$distance = abs(((myneighb$start + myneighb$end)/2) - refCord)
+  myneighb = myneighb[order(myneighb$distance, decreasing = F),]
+  if (inc){
+    return(myneighb[1:n,-7])
+  } else{
+    return(myneighb[(2:(n+1)),-7])
+  }
+}
+
+myGene = "CDKN2A";myType = "dd";myseed = 1;
+nng = 50 #consider 50 neighbor genes as candidates
+useStringDB = T #also consider functionally related genes as caididates
+
+myneighb = getNNeighbor(myGene, nng, g =hg19) #neighbor genes
+
+if (useStringDB){ #functionally related genes
+  mygenestring = read.delim(paste0("../data/",myGene,"_string_interactions.tsv"), stringsAsFactors = F)
+  mystringnb = unique(c(mygenestring$X.node1, mygenestring$node2))
+  nng = min(nng, nrow(myneighb))
+  genesToUse = unique(c(myneighb$genename,mystringnb)) #consider both types
+  genesToUse = genesToUse[genesToUse %in% dimnames(tcgaexp_fp)[[2]]]
+}else{
+  genesToUse = myneighb$genename #only neighbor genes
+}
+
+tgene = as.data.frame(subset(tcgaexp_fp, select=genesToUse))
+tdata = cbind(tgene, tcgaau[,myGene])
+names(tdata)[ncol(tdata)] <-"cna"
+tdata$cna = ifelse(tdata$cna < -1, 1, 0)
+
+set.seed(myseed)
+idx = createDataPartition(y= tdata$cna, p = 0.7, list =F)
+trn = tdata[idx,]
+tst = tdata[-idx,]
+
+
+glmnet1<-cv.glmnet(x= as.matrix(trn[,1:(ncol(trn)-1)]),y=trn[,ncol(trn)],family="binomial",nfolds=3,alpha = 0.1)#
+pd = predict(glmnet1,newx = as.matrix(trn[,1:(ncol(trn)-1)], type = "response"))
+m=pr.curve(pd[trn$cna==1],pd[trn$cna==0],curve = T)
+plot(m, col = 'red',main = paste0(myGene,": training"))
+pd = predict(glmnet1,newx = as.matrix(tst[,1:(ncol(tst)-1)], type = "response"))
+m=pr.curve(pd[tst$cna==1],pd[tst$cna==0],curve = T)
+plot(m, col = 'red',main = paste0(myGene,": testing"))
+print(m)
+```
+The performance of the model is reasonable. We now check the importance of the selected feature genes.
+```{r weights,fig.height = 4.5, fig.width = 3.5, fig.align = "center"}
+par(las=2)
+wts = as.data.frame(as.matrix(coef(glmnet1)))
+wts$genename = rownames(wts)
+wts = wts[-1,] #ignor intercept
+wts = wts[wts$`1` !=0,]
+wts = wts[order(wts$`1`),]
+bb = barplot(wts$`1`,horiz = T,names.arg = wts$genename, col = ifelse(wts$`1`>0,'red','blue'),cex.names  = 0.7,xlab = "Weight")
+text(x = 0,y = bb[which(wts$genename %in% mystringnb)],labels = "+", col = "black")
+```
+
+The genes that are functionally related to *CDKN2A* are marked with a plus sign. It is interesting to check the feature genes selected by CNAPE.
+
+### Contact
+For technical issues please send an email to qmu@connect.ust.hk or jgwang@ust.hk.
+
+

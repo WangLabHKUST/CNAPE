@@ -18,8 +18,6 @@ Copy number alterations (CNAs) are important features of human cancer. While the
 ### 1. Installation
 Before installing CNAPE please make sure you have installed [R](https://cran.r-project.org/), and ```Rscript``` is available in your system path ($PATH).
 
-Necessary R packages for running CNAPE: *glmnet*,*PRROC*,*caret*,.
-
 A simple clone of the repository is enough for installation, since the necessary packages will be installed automatically when you run CNAPE.
 ```
 git clone https://github.com/WangLabHKUST/CNAPE
@@ -39,15 +37,14 @@ Rscript cnape.R expressionMatrix outputPrefix
 
 The output contains *prefix*.chromosome_level.cna.txt and *prefix*.arm_level.cna.txt, where 1 means amplified, -1 means deleted, while 0 means no CNA change.
 ### 4. Examples
-We provide two examples, one for large-scale CNA prediction, and the other for gene-level CNA prediction.
-##### Large-scale CNAs
-Fr chromosome- and arm- level CNAs, the models trained on TCGA pan-cancer data are available. After you have cloned CNAPE, please go to the CNAPE folder and run :
+#### Large-scale CNAs
+Fr chromosome and arm level CNAs, the models trained on TCGA pan-cancer data are available. After you have cloned CNAPE, please go to the CNAPE folder and run :
 ```
 ./run_example.sh
 ```
-Your result files, named ,should appear in the example folder. You can compare the results with the provided example.chromosome_level.cna.origional.txt and example.arm_level.cna.origional.txt.
+Your result files, named example.chromosome_level.cna.txt and example.arm_level.cna.txt, should appear in the example folder. You can compare the results with the provided example.chromosome_level.cna.origional.txt and example.arm_level.cna.origional.txt.
 
-##### Gene-level CNAs
+#### Gene-level CNAs
 A more detailed [example](example/Example_copy_number_alteration_in_glioma.md) on gene-level CNA prediction is provided, using the open-access TCGA pan-glioma data. In this example you will see how the models are formulated and trained, as well as their performance in testing. We also show how you can extract the feature genes in the models.
 
 ## Dependencies

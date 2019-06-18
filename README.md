@@ -39,11 +39,20 @@ Rscript cnape.R expressionMatrix outputPrefix
 
 The output contains *prefix*.chromosome_level.cna.txt and *prefix*.arm_level.cna.txt, where 1 means amplified, -1 means deleted, while 0 means no CNA change.
 ### 4. Examples
-We have provided a thorough example using the TCGA pan-glioma data. [Example](example/Example_copy_number_alteration_in_glioma.md) 
+We provide two examples, one for large-scale CNA prediction, and the other for gene-level CNA prediction.
+##### Large-scale CNAs
+Fr chromosome- and arm- level CNAs, the models trained on TCGA pan-cancer data are available. After you have cloned CNAPE, please go to the CNAPE folder and run :
+```
+./run_example.sh
+```
+Your result files, named ,should appear in the example folder. You can compare the results with the provided example.chromosome_level.cna.origional.txt and example.arm_level.cna.origional.txt.
+
+##### Gene-level CNAs
+A more detailed [example](example/Example_copy_number_alteration_in_glioma.md) on gene-level CNA prediction is provided, using the open-access TCGA pan-glioma data. In this example you will see how the models are formulated and trained, as well as their performance in testing. We also show how you can extract the feature genes in the models.
 
 ## Dependencies
 
-The models are trained on the [TCGA Pancancer Atlas data](https://gdc.cancer.gov/about-data/publications/pancanatlas), using [*glmnet*](https://web.stanford.edu/~hastie/glmnet/glmnet_alpha.html) package in R. Other dependencies include *reshape2*, *ggplot2* and *pheatmap*, all for visualization. The dependency requirements are automatically solved while running the program.
+The models are trained on the [TCGA Pancancer Atlas data](https://gdc.cancer.gov/about-data/publications/pancanatlas), using [*glmnet*](https://web.stanford.edu/~hastie/glmnet/glmnet_alpha.html) package in R. The dependency requirements are automatically solved while running the program.
 
 ## Contact
 For technical issues please send an email to qmu@connect.ust.hk or jgwang@ust.hk.

@@ -39,11 +39,7 @@ Rscript cnape.R expressionMatrix outputPrefix
 
 The output contains *prefix*.chromosome_level.cna.txt and *prefix*.arm_level.cna.txt, where 1 means amplified, -1 means deleted, while 0 means no CNA change.
 ### 4. Examples
-We provide two examples, one for large-scale CNA prediction, and the other for gene-level CNA prediction. After you have cloned CNAPE, please go to the CNAPE folder and run :
-```
-./run_example.sh
-```
-A result file named example.cnas.txt should appear in the example folder. You can compare the results with the provided example.cnas.origional.txt.
+We have provided a thorough example using the TCGA pan-glioma data. [Example](example/Example_copy_number_alteration_in_glioma.md) 
 
 ## Dependencies
 

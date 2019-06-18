@@ -1,30 +1,21 @@
----
-title: "Copy Number Alteration Prediction using gene Expression"
-output: github_document
----
-```{r pchages, include=FALSE}
-knitr::opts_chunk$set(comment = NA)
-library(dplyr)
-library(preprocessCore)
-library(caret)
-library(glmnet)
-library(pROC)
-library(PRROC)
-library(VennDiagram)
-```
+Copy Number Alteration Prediction using gene Expression
+================
+
 ### Introduction
 
 Copy number alterations (CNAs) are important features of human cancer. While the standard methods for CNA detection (CGH arrays, SNP arrrays, DNA sequencing) rely on DNA, occasionally DNA data are not available, especially in cancer studies (e.g. biopsies, legacy data). CNAPE comes into play by predicting CNAs based on gene expression data from RNA-seq. In this example we use the TCGA pan-glioma dataset as a proof-of-concept study.
 
 ### Prerequisites
-Before installing CNAPE please make sure you have installed [R](https://cran.r-project.org/), and ```Rscript``` is available in your system path ($PATH).
+
+Before installing CNAPE please make sure you have installed [R](https://cran.r-project.org/), and `Rscript` is available in your system path ($PATH).
 
 Necessary R packages for running CNAPE: *dplyr*,*preprocessCore*,*glmnet*,*caret*,*PRROC*,*pROC*.
 
 ### TCGA pan-glioma dataset
-Glioma is a lethal type of brain tumor with poor survival. In gliomas, copy number alterations (CNAs) such as chromosome 7 gain, chromosome 10 loss, chromosomes 1p/19q co-deletion, EGFR amplification, CDKN2A deletion are known to be prevalent and contribute to the initialization and development of glioma. Here we use the pan-glioma cohort from The Cancer Genome Atlas (TCGA) to examplify how CNAPE could be used to predict CNAs.
-The gene expression profile of can be downloaded from Broad GDAC Firehose (<https://gdac.broadinstitute.org/>). A copy has been provided in the example folder of CNAPE.
-```{r tcgaexp, echo=T,cache=F}
+
+Glioma is a lethal type of brain tumor with poor survival. In gliomas, copy number alterations (CNAs) such as chromosome 7 gain, chromosome 10 loss, chromosomes 1p/19q co-deletion, EGFR amplification, CDKN2A deletion are known to be prevalent and contribute to the initialization and development of glioma. Here we use the pan-glioma cohort from The Cancer Genome Atlas (TCGA) to examplify how CNAPE could be used to predict CNAs. The gene expression profile of can be downloaded from Broad GDAC Firehose (<https://gdac.broadinstitute.org/>). A copy has been provided in the example folder of CNAPE.
+
+``` r
 tcgaexp = read.delim("GBMLGG.rnaseqv2__illuminahiseq_rnaseqv2__unc_edu__Level_3__RSEM_genes_normalized__data.data.txt.gz", 
                      stringsAsFactors = F, row.names = 1, comment.char = "#")
 idx = substr(names(tcgaexp),14,15) == "01" #only use the primary tumor samples
@@ -33,18 +24,36 @@ names(tcgaexp) = substr(names(tcgaexp),start = 1,stop = 12)
 dim(tcgaexp)
 ```
 
+    [1] 20531   669
+
 The copy number alterations for these samples have been analyzed and published in [**Cell** in 2016](https://www.cell.com/cell/fulltext/S0092-8674(15)01692-X), and the processed data can be accessed via [cBioportal](https://www.cbioportal.org/study/summary?id=lgggbm_tcga_pub). A copy has also been provided in CNAPE, under example folder. Here is a preview of the data:
-```{r tcgaau, echo=TRUE, cache=F}
+
+``` r
 tcgaau = read.delim("GBMLGG_CNV_20190618.txt.gz", stringsAsFactors = F, comment.char = "#", row.names = 1)
 rownames(tcgaau) = gsub(rownames(tcgaau),pattern = "-",replacement = ".") # "-" ==> "." 
 knitr::kable(head(tcgaau))
+```
+
+|              |  MET|  EGFR|  PDGFRA|  CDK4|  MDM2|  TP53|  CDKN2A|  RB1|  NF1|  PTEN|  CIC|  FUBP1|  codel|
+|--------------|----:|-----:|-------:|-----:|-----:|-----:|-------:|----:|----:|-----:|----:|------:|------:|
+| TCGA.CS.4938 |    1|     0|       0|     0|     0|     0|       0|    0|    0|     0|    0|      0|      0|
+| TCGA.CS.4941 |    1|     2|       0|     2|     2|     0|       0|    0|    0|    -1|    0|      1|      0|
+| TCGA.CS.4942 |    1|     1|       0|     0|     0|     0|       0|    0|    0|     0|   -1|      0|      0|
+| TCGA.CS.4943 |    0|     0|       2|     0|     0|     0|      -2|   -1|    0|     0|   -1|      0|      0|
+| TCGA.CS.4944 |    0|     0|       0|     0|     0|     0|       0|    0|    0|     0|    2|      0|      0|
+| TCGA.CS.5390 |    0|     0|       0|     0|     0|     0|       0|    0|    0|     0|   -1|     -1|     -1|
+
+``` r
 dim(tcgaau)
 ```
+
+    [1] 667  13
 
 In this table, the copy number has five status: -2 means deep deletion, -1 means shallow deletion, 0 means no CNA, 1 means one-copy gain, 2 means amplification.
 
 We can only use the sample that have both gene expression data and copy number data to model CNA.
-```{r intersection, cache=F}
+
+``` r
 sharedSamples = intersect(names(tcgaexp), rownames(tcgaau))
 tcgaexp = tcgaexp[,sharedSamples]
 tcgaau = tcgaau[sharedSamples,]
@@ -57,8 +66,7 @@ CNAPE uses a multinomial logistic regression model to predict the CNAs from gene
 
 Here we use the coordinates of human genes, which are compiled from Gencode annotation version 19, to locate genes within or close to a given region. We also included the information about functionally related genes, which we extracted from STRING database.
 
-
-```{r genes, cache=F}
+``` r
 #gene information
 hg19 = read.delim("../data/hg19.v19.mymap.txt.gz", stringsAsFactors = F)
 hg19 = hg19[,c(3,5,6,7)]
@@ -96,7 +104,7 @@ tcgaexp_fp = as.data.frame(t(scale(t(tcgaexp_fp))))
 
 Now the data is ready, so we can start training and testing models. The first example is the broad CNA, 1p/19q codeletion. Note that for the large-scale CNAs, we have little biological knowledge about exactly which genes are functionally related to the alteration, so we set the weight of biological knowledge to zero. In other words, we consider all the genes as candidate features.
 
-```{r codel model, echo=TRUE, cache=F}
+``` r
 dtx = tcgaexp_fp
 dty = ifelse(tcgaau$codel== -1,1,0)
 set.seed(65536)
@@ -113,7 +121,8 @@ md = cv.glmnet(x= xtrn ,y=ytrn,family="binomial",nfolds=3,alpha = 0.1)
 ```
 
 Now we have the model, we can check the model performance on the testing data:
-``` {r training, fig.height = 3.5, fig.width = 8, fig.align = "center"}
+
+``` r
 par(mfrow = c(1,2))
 auroc = roc(as.factor(ytrn),predict(md,newx = xtrn)[,1])
 plot(auroc,main = "1p/19q codel: training")
@@ -121,16 +130,51 @@ text(0.2,0.1,labels = paste0("AUC=",round(auroc$auc[1],4)))
 auroc = roc(as.factor(ytst),predict(md,newx = xtst)[,1])
 plot(auroc, main = "1p/19q codel: testing")
 text(0.2,0.1,labels = paste0("AUC=",round(auroc$auc[1],4)))
+```
+
+<img src="Example_copy_number_alteration_in_glioma_files/figure-markdown_github/training-1.png" style="display: block; margin: auto;" />
+
+``` r
 confusionMatrix(as.factor(predict(md,newx = xtst, type = "class")[,1]),as.factor( ytst),positive = '1')
 ```
+
+    Confusion Matrix and Statistics
+
+              Reference
+    Prediction   0   1
+             0 128   0
+             1   1  36
+                                              
+                   Accuracy : 0.9939          
+                     95% CI : (0.9667, 0.9998)
+        No Information Rate : 0.7818          
+        P-Value [Acc > NIR] : <2e-16          
+                                              
+                      Kappa : 0.9824          
+                                              
+     Mcnemar's Test P-Value : 1               
+                                              
+                Sensitivity : 1.0000          
+                Specificity : 0.9922          
+             Pos Pred Value : 0.9730          
+             Neg Pred Value : 1.0000          
+                 Prevalence : 0.2182          
+             Detection Rate : 0.2182          
+       Detection Prevalence : 0.2242          
+          Balanced Accuracy : 0.9961          
+                                              
+           'Positive' Class : 1               
+                                              
 
 We can see the model gives very nice prediction results. Then we move to gene-level predictions.
 
 ### Model training and testing: gene-level CNAs
+
 Next we explore gene-level CNAs. For this type of task, two types of candidate feature genes were considered: genes at nearby loci of the target gene, and genes functionally related to the target gene as defined in the STRING database.
 
 As an example, we predict *CDKN2A* deep deletion in these samples. We use Area Under Precision Recall Curve (AUPRC) to measure the performance of the models.
-```{r CDKN2A, fig.height = 4, fig.width = 8, fig.align = "center"}
+
+``` r
 par(mfrow = c(1,2))
 getNNeighbor <-function(gene, n, inc = TRUE, g = genes){ #a function defined to get the nearest N genes of a given gene
   genes = g
@@ -182,10 +226,29 @@ plot(m, col = 'red',main = paste0(myGene,": training"))
 pd = predict(glmnet1,newx = as.matrix(tst[,1:(ncol(tst)-1)], type = "response"))
 m=pr.curve(pd[tst$cna==1],pd[tst$cna==0],curve = T)
 plot(m, col = 'red',main = paste0(myGene,": testing"))
+```
+
+<img src="Example_copy_number_alteration_in_glioma_files/figure-markdown_github/CDKN2A-1.png" style="display: block; margin: auto;" />
+
+``` r
 print(m)
 ```
+
+
+      Precision-recall curve
+
+        Area under curve (Integral):
+         0.8645144 
+
+        Area under curve (Davis & Goadrich):
+         0.8644843 
+
+        Curve for scores from  -6.680302  to  3.061318 
+        ( can be plotted with plot(x) )
+
 The performance of the model is reasonable. We now check the importance of the selected feature genes.
-```{r weights,fig.height = 4.5, fig.width = 3.5, fig.align = "center"}
+
+``` r
 par(las=2)
 wts = as.data.frame(as.matrix(coef(glmnet1)))
 wts$genename = rownames(wts)
@@ -196,9 +259,10 @@ bb = barplot(wts$`1`,horiz = T,names.arg = wts$genename, col = ifelse(wts$`1`>0,
 text(x = 0,y = bb[which(wts$genename %in% mystringnb)],labels = "+", col = "black")
 ```
 
+<img src="Example_copy_number_alteration_in_glioma_files/figure-markdown_github/weights-1.png" style="display: block; margin: auto;" />
+
 The genes that are functionally related to *CDKN2A* are marked with a plus sign. It is interesting to check the feature genes selected by CNAPE.
 
 ### Contact
-For technical issues please send an email to qmu@connect.ust.hk or jgwang@ust.hk.
 
-
+For technical issues please send an email to <qmu@connect.ust.hk> or <jgwang@ust.hk>.
